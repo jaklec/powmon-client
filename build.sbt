@@ -1,4 +1,4 @@
-name := "Power Metrics Client"
+name := "powmon-client"
 
 organization := "se.jaklec"
 

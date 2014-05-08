@@ -1,6 +1,7 @@
-package se.jaklec.pwrmtx.client
+package se.jaklec.pwmc.core
 
 import akka.actor.{Props, ActorSystem}
+import se.jaklec.pwmc.read.GpioScheduler
 
 trait Core {
   implicit def system: ActorSystem
@@ -15,5 +16,5 @@ trait BootedCore extends Core {
 trait CoreActors {
   this: Core =>
 
-  val gpioReader = system.actorOf(Props[Dispatcher], "gpio-reader")
+  val gpioReader = system.actorOf(Props[GpioScheduler], "gpio-reader")
 }

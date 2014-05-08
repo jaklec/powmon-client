@@ -1,18 +1,19 @@
-package se.jaklec.pwrmtx.client
+package se.jaklec.pwmc.read
 
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.actor.{Props, ActorSystem}
-import se.jaklec.pwrmtx.client.Dispatcher.Tick
+import GpioScheduler.Tick
 import se.jaklec.rpi.gpio.Gpio.{Off, On}
 import se.jaklec.rpi.gpio.Gpio
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import scala.util.Success
+import se.jaklec.pwmc.PowmonSpec
 
 class GpioReaderSpec
   extends TestKit(ActorSystem("GpioReaderSpec"))
   with ImplicitSender
-  with PwrMtxSpec
+  with PowmonSpec
   with MockitoSugar {
 
   val gpio = mock[Gpio]
