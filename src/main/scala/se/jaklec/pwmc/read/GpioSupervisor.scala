@@ -3,12 +3,12 @@ package se.jaklec.pwmc.read
 import akka.actor.Actor
 import scala.concurrent.duration._
 
-object GpioScheduler {
+object GpioSupervisor {
   case object Tick
 }
 
-trait GpioScheduler extends Actor {
-  import GpioScheduler._
+trait GpioSupervisor extends Actor {
+  import GpioSupervisor._
 
   implicit val ec = context.dispatcher
 
