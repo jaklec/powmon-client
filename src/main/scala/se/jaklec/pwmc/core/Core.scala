@@ -16,5 +16,9 @@ trait BootedCore extends Core {
 trait CoreActors {
   this: Core =>
 
-  val gpioReader = system.actorOf(Props[GpioSupervisor], "gpio-reader")
+  val gpioReader = system.actorOf(Props[GpioSupervisor], "gpio-supervisor")
+}
+
+object Boot extends App with BootedCore with CoreActors {
+  println("Starting Power Monitor Client")
 }
