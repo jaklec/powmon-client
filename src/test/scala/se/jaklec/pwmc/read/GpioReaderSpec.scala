@@ -3,12 +3,16 @@ package se.jaklec.pwmc.read
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.actor.{Props, ActorSystem}
 import GpioSupervisor.Tick
-import se.jaklec.rpi.gpio.Gpio.{Off, On}
-import se.jaklec.rpi.gpio.Gpio
+import se.jaklec.rpi.gpio.Gpio.{Digital, Off, On}
+import se.jaklec.rpi.gpio.{ReadException, Gpio}
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import scala.util.{Failure, Success}
+import scala.concurrent.{Future, Await, future}
+import scala.concurrent.duration._
 import se.jaklec.pwmc.PowmonSpec
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.language.postfixOps
 
 class GpioReaderSpec
   extends TestKit(ActorSystem("GpioReaderSpec"))
@@ -25,60 +29,96 @@ class GpioReaderSpec
 
   "The GpioReader" should {
 
-    "read digital signal when it receives a Tick" in {
+    "read digital signal asynchronously when it receives a Tick" in {
 
-      when(gpio.readDigital) thenReturn Success(On)
-      reader ! Tick
-      expectMsg(On)
+      val f = future { On }
+      when(gpio.asyncReadDigital) thenReturn f
+      checkMsg(f, On)
     }
 
-    "only propagate state changes" in {
+    "read multiple signals of Off and On" in {
 
-      when(gpio.readDigital)
-        .thenReturn(Success(Off))
-        .thenReturn(Success(On))
-        .thenReturn(Success(Off))
-        .thenReturn(Success(Off))
-        .thenReturn(Success(Off))
-        .thenReturn(Success(On))
+      val f0 = future { Off }
+      val f1 = future { On }
+      val f2 = future { Off }
+      val f3 = future { Off }
+      val f4 = future { On }
 
-      reader ! Tick
-      reader ! Tick
-      reader ! Tick
-      reader ! Tick
-      reader ! Tick
-      reader ! Tick
+      when(gpio.asyncReadDigital) thenReturn(f0, f1, f2, f3, f4)
 
-      expectMsg(Off)
-      expectMsg(On)
-      expectMsg(Off)
-      expectMsg(On)
+      checkMsg(f0, Off)
+      checkMsg(f1, On)
+      checkMsg(f2, Off)
+      checkMsg(f3, Off)
+      checkMsg(f4, On)
     }
 
-    "inform supervisor about analog reads" in {
+    "not propagate failures" in {
 
-      when(gpio.readDigital) thenReturn Failure(new Exception("test failure"))
+      val f = future { throw new ReadException("fatal error") }
+      when(gpio.asyncReadDigital) thenReturn f
 
       reader ! Tick
-      reader ! Tick
-      reader ! Tick
-
-      expectMsg(NotADigitalValue)
-      expectMsg(NotADigitalValue)
-      expectMsg(NotADigitalValue)
+      Await.ready(f, 5 millis)
+      expectNoMsg(5 millis)
     }
 
-    "inform supervisor after real failures" in {
 
-      when(gpio.readDigital) thenThrow new RuntimeException("Big problem with the GPIO")
-
+    def checkMsg(f: Future[Digital], em: Digital) {
       reader ! Tick
-      reader ! Tick
-      reader ! Tick
-
-      expectMsg(ServiceUnavailable)
-      expectMsg(ServiceUnavailable)
-      expectMsg(ServiceUnavailable)
+      Await.ready(f, 5 millis)
+      expectMsg(em)
     }
+
+
+    //        .thenReturn(Success(On))
+    //        .thenReturn(Success(Off))
+    //      when(gpio.readDigital)
+    //
+    //    "only propagate state changes" in {
+    //
+    //        .thenReturn(Success(Off))
+//        .thenReturn(Success(Off))
+//        .thenReturn(Success(Off))
+//        .thenReturn(Success(On))
+//
+//      reader ! Tick
+//      reader ! Tick
+//      reader ! Tick
+//      reader ! Tick
+//      reader ! Tick
+//      reader ! Tick
+//
+//      expectMsg(Off)
+//      expectMsg(On)
+//      expectMsg(Off)
+//      expectMsg(On)
+//    }
+//
+//    "inform supervisor about analog reads" in {
+//
+//      when(gpio.readDigital) thenReturn Failure(new Exception("test failure"))
+//
+//      reader ! Tick
+//      reader ! Tick
+//      reader ! Tick
+//
+//      expectMsg(NotADigitalValue)
+//      expectMsg(NotADigitalValue)
+//      expectMsg(NotADigitalValue)
+//    }
+//
+//    "inform supervisor after real failures" in {
+//
+//      when(gpio.readDigital) thenThrow new RuntimeException("Big problem with the GPIO")
+//
+//      reader ! Tick
+//      reader ! Tick
+//      reader ! Tick
+//
+//      expectMsg(ServiceUnavailable)
+//      expectMsg(ServiceUnavailable)
+//      expectMsg(ServiceUnavailable)
+//    }
   }
 }

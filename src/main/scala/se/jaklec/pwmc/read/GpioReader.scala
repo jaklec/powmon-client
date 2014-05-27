@@ -12,49 +12,61 @@ object GpioReader {
 
 class GpioReader(gpio: Gpio) extends Actor with ActorLogging {
 
-  def readDigital = {
-    try {
-      gpio.readDigital match {
-        case s: Success[Digital] => s.get
-        case f@Failure(_) => sender ! NotADigitalValue
-      }
-    } catch {
-      case e: Exception =>
-        sender ! ServiceUnavailable
-    }
-  }
+  implicit val ec = context.dispatcher
 
   def receive = {
     case Tick =>
-      readDigital match {
-        case v@On => sendOn(v)
-        case v@Off => sendOff(v)
+      val sndr = sender
+      val f = gpio.asyncReadDigital
+      f.onSuccess {
+        case d: Digital =>
+          sndr ! d
       }
   }
 
-  def on: Receive = {
-    case Tick =>
-      readDigital match {
-        case v@Off => sendOff(v)
-        case _ =>
-      }
-  }
-
-  def off: Receive = {
-    case Tick =>
-      readDigital match {
-        case v@On => sendOn(v)
-        case _ =>
-      }
-  }
-
-  def sendOff(v: Off.type) {
-    sender ! v
-    context become off
-  }
-
-  def sendOn(v: On.type) {
-    sender ! v
-    context become on
-  }
+//  def readDigital = {
+//    try {
+//      gpio.readDigital match {
+//        case s: Success[Digital] => s.get
+//        case f@Failure(_) => sender ! NotADigitalValue
+//      }
+//    } catch {
+//      case e: Exception =>
+//        sender ! ServiceUnavailable
+//    }
+//  }
+//
+//  def receive = {
+//    case Tick =>
+//      readDigital match {
+//        case v@On => sendOn(v)
+//        case v@Off => sendOff(v)
+//      }
+//  }
+//
+//  def on: Receive = {
+//    case Tick =>
+//      readDigital match {
+//        case v@Off => sendOff(v)
+//        case _ =>
+//      }
+//  }
+//
+//  def off: Receive = {
+//    case Tick =>
+//      readDigital match {
+//        case v@On => sendOn(v)
+//        case _ =>
+//      }
+//  }
+//
+//  def sendOff(v: Off.type) {
+//    sender ! v
+//    context become off
+//  }
+//
+//  def sendOn(v: On.type) {
+//    sender ! v
+//    context become on
+//  }
 }
