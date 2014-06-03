@@ -6,6 +6,8 @@ version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.10.3"
 
+scalacOptions ++= Seq("-deprecation", "-feature")
+
 libraryDependencies ++= Seq(
   "se.jaklec" %% "gpio-scala" % "0.1-SNAPSHOT",
   "org.scalatest" %% "scalatest" % "2.1.2" % "test",

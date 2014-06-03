@@ -4,69 +4,41 @@ import akka.actor.{ActorLogging, Actor}
 import se.jaklec.rpi.gpio.Gpio
 import GpioSupervisor.Tick
 import se.jaklec.rpi.gpio.Gpio._
-import scala.util.{Success, Failure}
+import scala.concurrent.duration._
+import akka.pattern.CircuitBreaker
+import scala.language.postfixOps
 
 object GpioReader {
-  def apply() = new GpioReader(Pin0)
+  def apply() = new GpioReader(Pin0) with GpioBreakerConfig
+}
+
+trait GpioBreakerConfig {
+  val maxFailures = 3
+  val callTimeout = 50 millis
+  val resetTimeout = 1 minute
 }
 
 class GpioReader(gpio: Gpio) extends Actor with ActorLogging {
+  this: GpioBreakerConfig =>
 
   implicit val ec = context.dispatcher
 
+  lazy val breaker = new CircuitBreaker(context.system.scheduler, maxFailures, callTimeout, resetTimeout)
+    .onClose(log info("Closing circuit breaker."))
+
+
+  override def preStart(): Unit = gpio open In
+  override def postStop(): Unit = gpio close
+
   def receive = {
     case Tick =>
-      val sndr = sender
-      val f = gpio.asyncReadDigital
-      f.onSuccess {
+      val s = sender
+      breaker.onOpen {
+        log warning("Cannot read from GPIO. Circuit breaker is open.")
+        s ! ServiceUnavailable
+      }.withCircuitBreaker(gpio.asyncReadDigital).onSuccess {
         case d: Digital =>
-          sndr ! d
+          s ! d
       }
   }
-
-//  def readDigital = {
-//    try {
-//      gpio.readDigital match {
-//        case s: Success[Digital] => s.get
-//        case f@Failure(_) => sender ! NotADigitalValue
-//      }
-//    } catch {
-//      case e: Exception =>
-//        sender ! ServiceUnavailable
-//    }
-//  }
-//
-//  def receive = {
-//    case Tick =>
-//      readDigital match {
-//        case v@On => sendOn(v)
-//        case v@Off => sendOff(v)
-//      }
-//  }
-//
-//  def on: Receive = {
-//    case Tick =>
-//      readDigital match {
-//        case v@Off => sendOff(v)
-//        case _ =>
-//      }
-//  }
-//
-//  def off: Receive = {
-//    case Tick =>
-//      readDigital match {
-//        case v@On => sendOn(v)
-//        case _ =>
-//      }
-//  }
-//
-//  def sendOff(v: Off.type) {
-//    sender ! v
-//    context become off
-//  }
-//
-//  def sendOn(v: On.type) {
-//    sender ! v
-//    context become on
-//  }
 }
