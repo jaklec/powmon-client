@@ -16,7 +16,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterEach
 
 class GpioReaderSpec extends TestKit(ActorSystem("GpioReaderSpec"))
-  with ImplicitSender with PowmonSpec with MockitoSugar with ScalaFutures with BeforeAndAfterEach {
+  with ImplicitSender with PowmonSpec with MockitoSugar with ScalaFutures {
 
   trait GpioBreakerTestConfig extends GpioBreakerConfig {
     override val maxFailures = 2
