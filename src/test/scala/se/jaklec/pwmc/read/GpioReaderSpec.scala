@@ -4,7 +4,7 @@ import akka.testkit.{TestActorRef, ImplicitSender, TestKit}
 import akka.actor.{Props, ActorRef, ActorSystem}
 import GpioSupervisor.Tick
 import se.jaklec.rpi.gpio.Gpio._
-import se.jaklec.rpi.gpio.{DefaultGpio, ReadException, Gpio}
+import se.jaklec.rpi.gpio.{ReadException, Gpio}
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import scala.concurrent.{Future, Await, future}
@@ -30,9 +30,7 @@ class GpioReaderSpec extends TestKit(ActorSystem("GpioReaderSpec"))
 
     "read digital signal asynchronously when it receives a Tick" in {
       val gpio = mock[Gpio]
-      val actorRef = TestActorRef[GpioReader](Props(new GpioReader(gpio) with GpioBreakerTestConfig))
-      val reader = actorRef
-
+      val reader = TestActorRef[GpioReader](Props(new GpioReader(gpio) with GpioBreakerTestConfig))
       val f = future { On }
       when(gpio.asyncReadDigital) thenReturn f
       checkMsg(reader, f, On)
@@ -40,8 +38,7 @@ class GpioReaderSpec extends TestKit(ActorSystem("GpioReaderSpec"))
 
     "read multiple signals of Off and On" in {
       val gpio = mock[Gpio]
-      val actorRef = TestActorRef[GpioReader](Props(new GpioReader(gpio) with GpioBreakerTestConfig))
-      val reader = actorRef
+      val reader = TestActorRef[GpioReader](Props(new GpioReader(gpio) with GpioBreakerTestConfig))
 
       val f0 = future { Off }
       val f1 = future { On }
@@ -60,8 +57,7 @@ class GpioReaderSpec extends TestKit(ActorSystem("GpioReaderSpec"))
 
     "not propagate failures" in {
       val gpio = mock[Gpio]
-      val actorRef = TestActorRef[GpioReader](Props(new GpioReader(gpio) with GpioBreakerTestConfig))
-      val reader = actorRef
+      val reader = TestActorRef[GpioReader](Props(new GpioReader(gpio) with GpioBreakerTestConfig))
 
       val f = future { throw new ReadException("fatal error") }
       when(gpio.asyncReadDigital) thenReturn f
@@ -73,8 +69,7 @@ class GpioReaderSpec extends TestKit(ActorSystem("GpioReaderSpec"))
 
     "open circuit breaker when failing repeatedly" in {
       val gpio = mock[Gpio]
-      val actorRef = TestActorRef[GpioReader](Props(new GpioReader(gpio) with GpioBreakerTestConfig))
-      val reader = actorRef
+      val reader = TestActorRef[GpioReader](Props(new GpioReader(gpio) with GpioBreakerTestConfig))
 
       val f0 = future { throw new ReadException("fatal error") }
       val f1 = future { throw new ReadException("fatal error") }
@@ -115,9 +110,8 @@ class GpioReaderSpec extends TestKit(ActorSystem("GpioReaderSpec"))
 
     "close port before stop" in {
       val gpio = mock[Gpio]
-      val actorRef = TestActorRef[GpioReader](Props(new GpioReader(gpio) with GpioBreakerTestConfig))
-      actorRef.stop()
-
+      val reader = TestActorRef[GpioReader](Props(new GpioReader(gpio) with GpioBreakerTestConfig))
+      reader.stop()
       verify(gpio) close
     }
   }
