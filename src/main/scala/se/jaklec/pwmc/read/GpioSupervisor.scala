@@ -28,19 +28,19 @@ class GpioSupervisor(gpioReader: ActorRef, feeder: ActorRef) extends Actor {
   def stateOff: Receive = read orElse enterOn orElse doNothing
 
   def read: Receive = {
-    case t@Tick =>
-      gpioReader ! t
+    case tick@Tick =>
+      gpioReader ! tick
   }
   
   def enterOn: Receive = {
-    case d@On =>
-      feeder ! d
+    case on@On =>
+      feeder ! on
       context become stateOn
   }
   
   def enterOff: Receive = {
-    case d@Off =>
-      feeder ! d
+    case off@Off =>
+      feeder ! off
       context become stateOff
   }
   
